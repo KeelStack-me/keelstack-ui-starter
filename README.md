@@ -85,7 +85,7 @@ Engine starts on `http://localhost:3000`.
 ### 2. Install and configure the UI
 
 ```bash
-git clone https://github.com/your-org/keelstack-ui-starter
+git clone https://github.com/KeelStack-me/keelstack-ui-starter
 cd keelstack-ui-starter
 
 npm install
@@ -98,7 +98,7 @@ cp .env.local.example .env.local
 
 ```bash
 npm run dev
-# → http://localhost:4000
+# → http://localhost:3001
 ```
 
 If you want to use a different port:
