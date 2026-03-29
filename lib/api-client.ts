@@ -267,6 +267,34 @@ export function extractApiError(err: unknown): KSApiError {
   return { message: String(err) };
 }
 
+export function getAuthErrorMessage(err: unknown, mode: "register" | "login" | "mfa"): string {
+  const apiError = extractApiError(err);
+  const message = apiError.message.toLowerCase();
+
+  if (mode === "register") {
+    if (apiError.statusCode === 409 || message.includes("already registered")) {
+      return "That email already has an account. Sign in instead, or use password reset if you do not remember the password.";
+    }
+    return apiError.message;
+  }
+
+  if (mode === "login") {
+    if (message.includes("invalid credentials")) {
+      return "That email/password combination was rejected. Double-check your password, or reset it if needed.";
+    }
+    if (message.includes("locked")) {
+      return "This account is temporarily locked after repeated failed sign-in attempts. Wait a bit, then try again or reset the password.";
+    }
+    return apiError.message;
+  }
+
+  if (message.includes("invalid") || message.includes("expired")) {
+    return "That MFA code was not accepted. Enter the latest 6-digit code and try again.";
+  }
+
+  return apiError.message;
+}
+
 // ─── Auth API ─────────────────────────────────────────────────────────────────
 
 export const authApi = {

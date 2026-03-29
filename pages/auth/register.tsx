@@ -1,28 +1,30 @@
 import Head from "next/head";
 import { useState } from "react";
-import { useRouter } from "next/router";
 import Link from "next/link";
 import { KeelStackBrandLink, KeelStackPoweredBadge } from "../../components/KeelStackBrand";
-import { authApi, extractApiError } from "../../lib/api-client";
+import { authApi, extractApiError, getAuthErrorMessage } from "../../lib/api-client";
 
 export default function RegisterPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [enableMfa, setEnableMfa] = useState(false);
   const [error, setError] = useState("");
+  const [errorCode, setErrorCode] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setErrorCode(null);
     setLoading(true);
     try {
       await authApi.register(email, password, enableMfa);
       setDone(true);
     } catch (err) {
-      setError(extractApiError(err).message);
+      const apiError = extractApiError(err);
+      setError(getAuthErrorMessage(err, "register"));
+      setErrorCode(apiError.statusCode ?? null);
     } finally {
       setLoading(false);
     }
@@ -123,7 +125,17 @@ export default function RegisterPage() {
 
                 {error && (
                   <div className="rounded-lg bg-danger/10 border border-danger/30 px-3.5 py-2.5 text-sm text-danger">
-                    {error}
+                    <p>{error}</p>
+                    {errorCode === 409 && (
+                      <div className="mt-3 flex flex-wrap gap-3 text-xs">
+                        <Link href="/auth/login" className="text-accent hover:underline">
+                          Go to sign in
+                        </Link>
+                        <Link href="/auth/reset-password" className="text-accent hover:underline">
+                          Reset password
+                        </Link>
+                      </div>
+                    )}
                   </div>
                 )}
 

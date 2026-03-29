@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { KeelStackBrandLink, KeelStackPoweredBadge } from "../../components/KeelStackBrand";
-import { authApi, extractApiError } from "../../lib/api-client";
+import { authApi, extractApiError, getAuthErrorMessage } from "../../lib/api-client";
 import { useAuth } from "../../lib/auth-context";
 
 /**
@@ -32,11 +32,13 @@ export default function LoginPage() {
   const [challengeToken, setChallengeToken] = useState("");
   const [codePreview, setCodePreview]     = useState<string | undefined>();
   const [error, setError]                 = useState("");
+  const [errorCode, setErrorCode]         = useState<number | null>(null);
   const [loading, setLoading]             = useState(false);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setErrorCode(null);
     setLoading(true);
 
     try {
@@ -63,7 +65,9 @@ export default function LoginPage() {
       setUser(session.user);
       router.push("/");
     } catch (err) {
-      setError(extractApiError(err).message);
+      const apiError = extractApiError(err);
+      setError(getAuthErrorMessage(err, "login"));
+      setErrorCode(apiError.statusCode ?? null);
     } finally {
       setLoading(false);
     }
@@ -72,6 +76,7 @@ export default function LoginPage() {
   async function handleMfa(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setErrorCode(null);
     setLoading(true);
 
     try {
@@ -83,7 +88,9 @@ export default function LoginPage() {
       if (stored) setUser(stored);
       router.push("/");
     } catch (err) {
-      setError(extractApiError(err).message);
+      const apiError = extractApiError(err);
+      setError(getAuthErrorMessage(err, "mfa"));
+      setErrorCode(apiError.statusCode ?? null);
     } finally {
       setLoading(false);
     }
@@ -150,7 +157,17 @@ export default function LoginPage() {
 
                 {error && (
                   <div className="rounded-lg bg-danger/10 border border-danger/30 px-3.5 py-2.5 text-sm text-danger">
-                    {error}
+                    <p>{error}</p>
+                    {errorCode === 401 && (
+                      <div className="mt-3 flex flex-wrap gap-3 text-xs">
+                        <Link href="/auth/reset-password" className="text-accent hover:underline">
+                          Reset password
+                        </Link>
+                        <Link href="/auth/register" className="text-accent hover:underline">
+                          Create account
+                        </Link>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -205,7 +222,7 @@ export default function LoginPage() {
 
                 {error && (
                   <div className="rounded-lg bg-danger/10 border border-danger/30 px-3.5 py-2.5 text-sm text-danger">
-                    {error}
+                    <p>{error}</p>
                   </div>
                 )}
 
