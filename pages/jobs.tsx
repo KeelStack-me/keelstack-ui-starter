@@ -40,6 +40,7 @@ const STATUS_DOT: Record<KSTask["status"], string> = {
 
 export default function JobsPage() {
   const { isAuthenticated, isLoading } = useAuth();
+  const isReadOnlyDemo = !isAuthenticated;
 
   const [selectedType, setSelectedType] = useState<TaskType>("report");
   const [jobs, setJobs] = useState<TrackedJob[]>([]);
@@ -118,14 +119,15 @@ export default function JobsPage() {
           <p className="text-sm text-fg-muted mt-1">
             202 Accepted + poll pattern. KeelStack&apos;s canonical async request lifecycle.
           </p>
-          {!isAuthenticated && (
+          {isReadOnlyDemo && (
             <p className="mt-3 text-xs text-fg-muted">
-              You can submit background jobs without signing in. If you want the full secured auth
-              flow around account actions, open the{" "}
+              This page is read-only until you sign in. The engine currently protects{" "}
+              <code className="font-mono text-warning text-xs">POST /api/v1/tasks</code>, so the
+              demo avoids sending unauthenticated job requests that would just return 401. Open the{" "}
               <Link href="/auth-demo" className="text-accent hover:underline">
                 Auth Demo
               </Link>
-              .
+              {" "}to submit real tasks.
             </p>
           )}
         </div>
@@ -183,10 +185,14 @@ export default function JobsPage() {
 
           <button
             onClick={() => submitMut.mutate()}
-            disabled={submitMut.isPending}
+            disabled={submitMut.isPending || isReadOnlyDemo}
             className="bg-warning/90 hover:bg-warning text-bg font-medium px-5 py-2.5 rounded-lg text-sm transition-colors disabled:opacity-50"
           >
-            {submitMut.isPending ? "Submitting…" : `POST /api/v1/tasks → ${selectedType}`}
+            {isReadOnlyDemo
+              ? "Sign in to submit tasks"
+              : submitMut.isPending
+              ? "Submitting…"
+              : `POST /api/v1/tasks → ${selectedType}`}
           </button>
         </div>
 

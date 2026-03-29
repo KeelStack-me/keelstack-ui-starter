@@ -122,6 +122,14 @@ export interface KSApiError {
   statusCode?: number;
 }
 
+export interface KSMockWebhookEnvelope {
+  provider: BillingProvider;
+  eventType: string;
+  subscriptionId: string;
+  idempotencyKey: string;
+  note: string;
+}
+
 // ─── Token storage ────────────────────────────────────────────────────────────
 
 const SESSION_KEY = "ks_session_token";
@@ -400,13 +408,14 @@ export const billingApi = {
     customerEmail: string;
     provider: BillingProvider;
     plan: SubscriptionPlan;
+    idempotencyKey?: string;
   }): Promise<{ subscription: KSSubscription }> => {
-    const { data } = await http.post("/api/v1/billing/subscriptions", payload);
-    return data;
-  },
-
-  getMockWebhook: async (provider: BillingProvider) => {
-    const { data } = await http.get(`/api/v1/billing/webhooks/mock/${provider}`);
+    const { idempotencyKey, ...body } = payload;
+    const { data } = await http.post("/api/v1/billing/subscriptions", body, {
+      headers: idempotencyKey
+        ? { "x-idempotency-key": idempotencyKey }
+        : undefined,
+    });
     return data;
   },
 };

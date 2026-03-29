@@ -9,6 +9,7 @@ import {
   tokenStore,
   extractApiError,
   type BillingProvider,
+  type KSMockWebhookEnvelope,
   type SubscriptionPlan,
   type KSSubscription,
 } from "../lib/api-client";
@@ -37,7 +38,7 @@ export default function BillingPage() {
   const [selectedProvider, setSelectedProvider] = useState<BillingProvider>("stripe");
   const [lastResponse, setLastResponse] = useState<Record<string, unknown> | null>(null);
   const [lastIdempotencyKey, setLastIdempotencyKey] = useState<string>("");
-  const [mockWebhookData, setMockWebhookData] = useState<Record<string, unknown> | null>(null);
+  const [mockWebhookData, setMockWebhookData] = useState<KSMockWebhookEnvelope | null>(null);
   const [error, setError] = useState("");
 
   const { data: subData, isLoading: subLoading } = useQuery({
@@ -59,6 +60,7 @@ export default function BillingPage() {
         customerEmail,
         provider: selectedProvider,
         plan: selectedPlan,
+        idempotencyKey: key,
       });
     },
     onSuccess: (data) => {
@@ -70,8 +72,8 @@ export default function BillingPage() {
   });
 
   const mockWebhookMut = useMutation({
-    mutationFn: () => billingApi.getMockWebhook(selectedProvider),
-    onSuccess: (data) => setMockWebhookData(data as Record<string, unknown>),
+    mutationFn: async () => buildMockWebhookEnvelope(selectedProvider),
+    onSuccess: (data) => setMockWebhookData(data),
     onError: (err) => setError(extractApiError(err).message),
   });
 
@@ -270,9 +272,9 @@ export default function BillingPage() {
                 Webhook Deduplication Demo
               </h2>
               <p className="text-xs text-fg-muted mt-1">
-                Fetch the mock webhook payload for the selected provider. All four providers
-                share the same sandbox normalisation path — only Stripe has a real gateway
-                implementation in the engine.
+                Preview the normalized webhook envelope the engine deduplicates against. This is
+                generated locally in the UI so the demo stays accurate even when the backend does
+                not expose a public mock-webhook route.
               </p>
             </div>
             <button
@@ -280,7 +282,7 @@ export default function BillingPage() {
               disabled={mockWebhookMut.isPending}
               className="shrink-0 border border-border hover:border-accent text-fg-muted hover:text-fg px-4 py-2 rounded-lg text-xs font-mono transition-all disabled:opacity-50"
             >
-              {mockWebhookMut.isPending ? "Fetching…" : `GET /webhooks/mock/${selectedProvider}`}
+              {mockWebhookMut.isPending ? "Generating…" : `Preview ${selectedProvider} envelope`}
             </button>
           </div>
 
@@ -316,6 +318,19 @@ export default function BillingPage() {
       </div>
     </Layout>
   );
+}
+
+function buildMockWebhookEnvelope(provider: BillingProvider): KSMockWebhookEnvelope {
+  const subscriptionId = `sub_demo_${provider}`;
+  const eventType = provider === "stripe" ? "customer.subscription.updated" : "subscription.updated";
+
+  return {
+    provider,
+    eventType,
+    subscriptionId,
+    idempotencyKey: `${provider}:${eventType}:${subscriptionId}`,
+    note: "UI-generated preview of the canonical webhook envelope used for deduplication.",
+  };
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────

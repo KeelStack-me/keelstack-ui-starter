@@ -91,7 +91,7 @@ cd keelstack-ui-starter
 npm install
 
 cp .env.local.example .env.local
-# Edit .env.local — set NEXT_PUBLIC_KEELSTACK_API_URL to your engine URL
+# Edit .env.local — set KEELSTACK_API_URL to your engine URL
 ```
 
 ### 3. Run
@@ -126,7 +126,7 @@ The `NEXT_PUBLIC_LLM_*` variables are display-only — they mirror your engine c
 
 ## API contract
 
-All calls go to `NEXT_PUBLIC_KEELSTACK_API_URL` via `lib/api-client.ts`. The client is typed against the engine's exact route shapes:
+Browser calls go through Next.js `/api/*` rewrites, which proxy to `KEELSTACK_API_URL`. The client is typed against the engine's route shapes:
 
 ```
 POST   /api/v1/auth/register
@@ -140,8 +140,6 @@ POST   /api/v1/auth/email-verification/request
 
 GET    /api/v1/billing/subscriptions/current
 POST   /api/v1/billing/subscriptions
-GET    /api/v1/billing/webhooks/mock/:provider
-
 POST   /api/v1/tasks
 GET    /api/v1/tasks/:jobId
 
@@ -163,8 +161,8 @@ keelstack-ui-starter/
 ├── pages/
 │   ├── _app.tsx               # QueryClient + AuthProvider
 │   ├── index.tsx              # Overview — module health, user state
-│   ├── billing.tsx            # Subscriptions + idempotency + webhook dedup
-│   ├── jobs.tsx               # Async task submit + 202+poll lifecycle
+│   ├── billing.tsx            # Subscriptions + idempotency + local webhook dedup preview
+│   ├── jobs.tsx               # Authenticated async task submit + 202+poll lifecycle
 │   ├── llm.tsx                # Token budget + LLMClient boundary
 │   └── auth/
 │       ├── login.tsx          # Login + MFA step
